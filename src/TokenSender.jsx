@@ -11,6 +11,7 @@ function TokenSender({ wallet }) {
     contractAddress: localStorage.getItem('contractAddress') || '',
     balance: localStorage.getItem('balance') || 0,
     tokenSymbol: '', // Initialize token symbol state
+    transactionStatus: localStorage.getItem('transactionStatus') || 'idle', // Transaction status: idle, pending, success, or failure
   };
 
   const [state, setState] = useState(initialState);
@@ -21,9 +22,7 @@ function TokenSender({ wallet }) {
   };
 
   const handleCheckBalance = async () => {
-    
     const { contractAddress } = state;
-
 
     if (!wallet || !contractAddress) return;
 
@@ -58,18 +57,17 @@ function TokenSender({ wallet }) {
     const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
   
     try {
+      setState({ ...state, transactionStatus: 'pending' }); // Set transaction status to pending
+      localStorage.setItem('transactionStatus', 'pending'); // Update transaction status in localStorage
+  
       const tx = await contract.transfer(recipient, ethers.utils.parseUnits(amount, await contract.decimals()));
       await tx.wait();
-      alert('Tokens sent successfully!');
-      
-      // Update balance after successful transaction
-      const userBalance = await contract.balanceOf(wallet);
-      const formattedBalance = ethers.utils.formatUnits(userBalance, await contract.decimals());
-      setState(prevState => ({ ...prevState, balance: formattedBalance }));
-      localStorage.setItem('balance', formattedBalance); // Save updated balance to localStorage
+      setState({ ...state, transactionStatus: 'success' }); // Set transaction status to success
+      localStorage.setItem('transactionStatus', 'success'); // Update transaction status in localStorage
     } catch (error) {
       console.error('Error sending tokens:', error);
-      alert('Failed to send tokens.');
+      setState({ ...state, transactionStatus: 'failure' }); // Set transaction status to failure
+      localStorage.setItem('transactionStatus', 'failure'); // Update transaction status in localStorage
     }
   };
   
@@ -78,6 +76,20 @@ function TokenSender({ wallet }) {
   useEffect(() => {
     Object.keys(state).forEach(key => localStorage.setItem(key, state[key]));
   }, [state]);
+
+  // Listen for changes in localStorage
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const transactionStatus = localStorage.getItem('transactionStatus') || 'idle';
+      setState(prevState => ({ ...prevState, transactionStatus }));
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -119,6 +131,9 @@ function TokenSender({ wallet }) {
         <Button variant="contained" color="primary" onClick={handleSend}>
           Send Tokens
         </Button>
+        {state.transactionStatus === 'pending' && <p>Transaction is pending...</p>}
+        {state.transactionStatus === 'success' && <p>Transaction succeeded!</p>}
+        {state.transactionStatus === 'failure' && <p>Transaction failed.</p>}
       </div>
     </div>
   );
