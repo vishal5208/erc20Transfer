@@ -1,33 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import erc20Abi from './erc20Abi';
 
-function TokenSender() {
-  const [recipient, setRecipient] = useState('');
-  const [amount, setAmount] = useState('');
-  const [contractAddress, setContractAddress] = useState('');
-  const [wallet, setWallet] = useState(null);
-  const [balance, setBalance] = useState(0);
-
-  const handleRecipientChange = (event) => {
-    setRecipient(event.target.value);
+function TokenSender({ wallet }) {
+  const initialState = {
+    recipient: localStorage.getItem('recipient') || '',
+    amount: localStorage.getItem('amount') || '',
+    contractAddress: localStorage.getItem('contractAddress') || '',
+    balance: localStorage.getItem('balance') || 0,
   };
 
-  const handleAmountChange = (event) => {
-    setAmount(event.target.value);
-  };
+  const [state, setState] = useState(initialState);
 
-  const handleContractAddressChange = (event) => {
-    setContractAddress(event.target.value);
-  };
-
-  const handleWalletChange = (event) => {
-    setWallet(event.target.value);
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setState({ ...state, [name]: value });
   };
 
   const handleCheckBalance = async () => {
+    const { wallet, contractAddress } = state;
     if (!wallet || !contractAddress) return;
 
     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -35,10 +28,14 @@ function TokenSender() {
     const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
     
     const userBalance = await contract.balanceOf(wallet);
-    setBalance(ethers.utils.formatEther(userBalance));
+    const formattedBalance = ethers.utils.formatEther(userBalance);
+    setState({ ...state, balance: formattedBalance });
+    // Save balance to localStorage
+    localStorage.setItem('balance', formattedBalance);
   };
 
   const handleSend = async () => {
+    const { wallet, contractAddress, amount, recipient } = state;
     if (!wallet || !contractAddress || !amount || !recipient) return;
 
     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -55,36 +52,36 @@ function TokenSender() {
     }
   };
 
+  // Save state to localStorage on state change
+  useEffect(() => {
+    Object.keys(state).forEach(key => localStorage.setItem(key, state[key]));
+  }, [state]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <TextField
         label="ERC20 Contract Address"
-        value={contractAddress}
-        onChange={handleContractAddressChange}
-        fullWidth
-        margin="normal"
-        sx={{ maxWidth: '400px' }}
-      />
-      <TextField
-        label="Your Wallet Address"
-        value={wallet}
-        onChange={handleWalletChange}
+        name="contractAddress"
+        value={state.contractAddress}
+        onChange={handleChange}
         fullWidth
         margin="normal"
         sx={{ maxWidth: '400px' }}
       />
       <TextField
         label="Recipient Address"
-        value={recipient}
-        onChange={handleRecipientChange}
+        name="recipient"
+        value={state.recipient}
+        onChange={handleChange}
         fullWidth
         margin="normal"
         sx={{ maxWidth: '400px' }}
       />
       <TextField
         label="Amount"
-        value={amount}
-        onChange={handleAmountChange}
+        name="amount"
+        value={state.amount}
+        onChange={handleChange}
         fullWidth
         margin="normal"
         sx={{ maxWidth: '400px' }}
@@ -92,7 +89,8 @@ function TokenSender() {
       <Button variant="contained" color="primary" onClick={handleCheckBalance} style={{ marginBottom: '10px' }}>
         Check Balance
       </Button>
-      <p>Your balance: {balance} ETH</p>
+      <p>Your balance: {state.balance} ETH</p>
+      <p>Sender: {wallet}</p> {/* Display the connected wallet address as the sender */}
       <Button variant="contained" color="primary" onClick={handleSend}>
         Send Tokens
       </Button>
