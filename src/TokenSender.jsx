@@ -5,6 +5,9 @@ import Button from '@mui/material/Button';
 import erc20Abi from './erc20Abi';
 
 function TokenSender({ wallet }) {
+  const [errorMessage, setErrorMessage] = useState('');
+
+
   const initialState = {
     recipient: localStorage.getItem('recipient') || '',
     amount: localStorage.getItem('amount') || '',
@@ -54,20 +57,40 @@ function TokenSender({ wallet }) {
     const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
   
     try {
-      setState({ ...state, transactionStatus: 'pending' }); 
+      setState({ ...state, transactionStatus: 'pending' });
   
       const tx = await contract.transfer(recipient, ethers.utils.parseUnits(amount, await contract.decimals()));
-      const transactionHash = tx.hash; 
+      const transactionHash = tx.hash;
       localStorage.setItem('transactionHash', transactionHash); // Update local storage with new transaction hash
-    
+  
       await tx.wait();
-
+  
       setState({ ...state, transactionStatus: 'success', transactionHash });
     } catch (error) {
       console.error('Error sending tokens:', error);
-      setState({ ...state, transactionStatus: 'failure' }); 
+  
+      // Handle "transaction was replaced" error
+      if (error.code === 'TRANSACTION_REPLACED') {
+        console.log('Replacement Transaction:', error.replacement);
+        const gasPrice = error.replacement.gasPrice ? ethers.utils.formatUnits(error.replacement.gasPrice, 'gwei') : 'Unknown';
+        const gasLimit = error.replacement.gasLimit ? error.replacement.gasLimit.toString() : 'Unknown';
+        const errorMessage = `Gas Price: ${gasPrice} Gwei, Gas Limit: ${gasLimit}`;
+        setErrorMessage(errorMessage);
+        setState({ ...state, transactionStatus: 'replaced' });
+      } else {
+        let gasMessage = 'Failed to send tokens';
+        if (error.gasPrice) {
+          gasMessage += ` Gas Price: ${error.gasPrice.toString()}`;
+        }
+        if (error.gasLimit) {
+          gasMessage += ` Gas Limit: ${error.gasLimit.toString()}`;
+        }
+        setErrorMessage(gasMessage);
+        setState({ ...state, transactionStatus: 'failure' });
+      }
     }
   };
+  
   
   async function checkTransactionStatus(transactionHash, wallet) {
     if (!wallet || !transactionHash) return null;
@@ -79,7 +102,6 @@ function TokenSender({ wallet }) {
       // Check the most recent transaction status
       const transactionReceipt = await signer.provider.getTransactionReceipt(transactionHash);
 
-      console.log(JSON.stringify(transactionReceipt))
       if (transactionReceipt) {
         if (transactionReceipt.status === 1) { // Status 1 indicates success
           return 'success';
@@ -97,12 +119,8 @@ function TokenSender({ wallet }) {
   }
   
   useEffect(() => {
-    // Code to run once when the application is refreshed
-    console.log("Application refreshed!");
-  
-    // Retrieve the transaction hash from localStorage and log it
+   
     const transactionHash = localStorage.getItem('transactionHash');
-    console.log("Transaction hash:", transactionHash);
   
     // Call checkTransactionStatus function
     const checkStatusRecursively = async () => {
@@ -160,6 +178,53 @@ function TokenSender({ wallet }) {
     Object.keys(state).forEach(key => localStorage.setItem(key, state[key]));
   }, [state]);
 
+  useEffect(() => {
+    console.log("Setting up event listener...");
+    
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner(wallet);
+  
+    if (!provider) {
+      console.error("Web3 provider not found.");
+      return;
+    }
+  
+    console.log("Web3 provider found:", provider);
+  
+    const filter = {
+      address: state.contractAddress, // Address of the ERC20 contract
+      topics: [ethers.utils.id('Transfer(address,address,uint256)')], // Transfer event topic
+      fromBlock: 'latest',
+      toBlock: 'latest'
+    };
+  
+    console.log("Filter:", filter);
+  
+    const eventListener = async () => {
+      console.log("Inside event listener...");
+      provider.once(filter, async (log) => {
+        const transactionHash = log.transactionHash;
+        console.log('Pending Transaction Hash:', transactionHash);
+        // Add your logic here to handle pending transactions
+      });
+    };
+  
+    if (wallet && state.contractAddress) {
+      console.log("Attaching event listener...");
+      eventListener();
+    } else {
+      console.warn("Wallet or contract address not available.");
+    }
+  
+    return () => {
+      // Cleanup function
+      console.log("Removing all listeners...");
+      provider.removeAllListeners();
+    };
+  }, [wallet, state.contractAddress]);
+  
+
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ border: '1px solid #ccc', padding: '10px', marginBottom: '20px', width: '100%', maxWidth: '500px' }}>
@@ -203,6 +268,10 @@ function TokenSender({ wallet }) {
         {state.transactionStatus === 'pending' && <p>Transaction is pending...</p>}
         {state.transactionStatus === 'success' && <p>Transaction succeeded!</p>}
         {state.transactionStatus === 'failure' && <p>Transaction failed.</p>}
+        {state.transactionStatus === 'replaced' && <p style={{ fontSize: '24px', color: 'red' }}>Transaction was replaced!</p>}
+        {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+
+
       </div>
     </div>
   );
