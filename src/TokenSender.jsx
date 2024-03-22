@@ -10,8 +10,9 @@ function TokenSender({ wallet }) {
     amount: localStorage.getItem('amount') || '',
     contractAddress: localStorage.getItem('contractAddress') || '',
     balance: localStorage.getItem('balance') || 0,
-    tokenSymbol: '', // Initialize token symbol state
-    transactionStatus: localStorage.getItem('transactionStatus') || 'idle', // Transaction status: idle, pending, success, or failure
+    tokenSymbol: '', 
+    transactionStatus: localStorage.getItem('transactionStatus') || 'idle', 
+    transactionHash: localStorage.getItem('transactionHash') || null,
   };
 
   const [state, setState] = useState(initialState);
@@ -31,15 +32,11 @@ function TokenSender({ wallet }) {
     const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
 
     try {
-      // Fetch token symbol
       const tokenSymbol = await contract.symbol();
-
-      // Fetch user balance
       const userBalance = await contract.balanceOf(wallet);
       const formattedBalance = ethers.utils.formatUnits(userBalance, await contract.decimals());
 
       setState({ ...state, balance: formattedBalance, tokenSymbol });
-      // Save balance to localStorage
       localStorage.setItem('balance', formattedBalance);
     } catch (error) {
       console.error('Error checking balance:', error);
@@ -57,39 +54,112 @@ function TokenSender({ wallet }) {
     const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
   
     try {
-      setState({ ...state, transactionStatus: 'pending' }); // Set transaction status to pending
-      localStorage.setItem('transactionStatus', 'pending'); // Update transaction status in localStorage
+      setState({ ...state, transactionStatus: 'pending' }); 
   
       const tx = await contract.transfer(recipient, ethers.utils.parseUnits(amount, await contract.decimals()));
+      const transactionHash = tx.hash; 
+      localStorage.setItem('transactionHash', transactionHash); // Update local storage with new transaction hash
+    
       await tx.wait();
-      setState({ ...state, transactionStatus: 'success' }); // Set transaction status to success
-      localStorage.setItem('transactionStatus', 'success'); // Update transaction status in localStorage
+
+      setState({ ...state, transactionStatus: 'success', transactionHash });
     } catch (error) {
       console.error('Error sending tokens:', error);
-      setState({ ...state, transactionStatus: 'failure' }); // Set transaction status to failure
-      localStorage.setItem('transactionStatus', 'failure'); // Update transaction status in localStorage
+      setState({ ...state, transactionStatus: 'failure' }); 
     }
   };
   
+  async function checkTransactionStatus(transactionHash, wallet) {
+    if (!wallet || !transactionHash) return null;
+  
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner(wallet);
+  
+    try {
+      // Check the most recent transaction status
+      const transactionReceipt = await signer.provider.getTransactionReceipt(transactionHash);
 
-  // Save state to localStorage on state change
+      console.log(JSON.stringify(transactionReceipt))
+      if (transactionReceipt) {
+        if (transactionReceipt.status === 1) { // Status 1 indicates success
+          return 'success';
+        } else if (transactionReceipt.status === 0) { // Status 0 indicates failure
+          return 'failure';
+        }
+      } else {
+        // Transaction is still pending
+        return 'pending';
+      }
+    } catch (error) {
+      console.error('Error checking transaction status:', error);
+      return 'error';
+    }
+  }
+  
+  useEffect(() => {
+    // Code to run once when the application is refreshed
+    console.log("Application refreshed!");
+  
+    // Retrieve the transaction hash from localStorage and log it
+    const transactionHash = localStorage.getItem('transactionHash');
+    console.log("Transaction hash:", transactionHash);
+  
+    // Call checkTransactionStatus function
+    const checkStatusRecursively = async () => {
+      try {
+        console.log("hiiiiiiiiiiiii")
+        const status = await checkTransactionStatus(transactionHash, wallet);
+        console.log("Transaction status:", status);
+        // Update the state or take further action based on the transaction status
+  
+        if (status === 'pending') {
+          // If transaction is still pending, wait for a few seconds and check again
+          setTimeout(checkStatusRecursively, 5000); // Check again after 5 seconds
+        }
+      } catch (error) {
+        console.error("Error checking transaction status:", error);
+      }
+    };  
+  
+    if (transactionHash) {
+      checkStatusRecursively();
+    }
+  }, []);
+  
+  
+  
+
+  useEffect(() => {
+    const getTransactionStatus = async () => {
+      if (!wallet || !state.transactionHash) return;
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner(wallet);
+
+      try {
+        const transactionReceipt = await signer.provider.getTransactionReceipt(state.transactionHash);
+        if (transactionReceipt) {
+          if (transactionReceipt.status === 1) { 
+            setState(prevState => ({ ...prevState, transactionStatus: 'success' }));
+            localStorage.removeItem('transactionHash'); 
+          } else if (transactionReceipt.status === 0) { 
+            setState(prevState => ({ ...prevState, transactionStatus: 'failure' }));
+          }
+        } else {
+          setTimeout(getTransactionStatus, 2000);
+        }
+      } catch (error) {
+        console.error('Error checking transaction status:', error);
+        setState(prevState => ({ ...prevState, transactionStatus: 'failure' }));
+      }
+    };
+
+    getTransactionStatus();
+  }, [state.transactionHash, wallet]);
+
   useEffect(() => {
     Object.keys(state).forEach(key => localStorage.setItem(key, state[key]));
   }, [state]);
-
-  // Listen for changes in localStorage
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const transactionStatus = localStorage.getItem('transactionStatus') || 'idle';
-      setState(prevState => ({ ...prevState, transactionStatus }));
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
