@@ -6,6 +6,7 @@ import erc20Abi from './erc20Abi';
 
 function TokenSender({ wallet }) {
   const [errorMessage, setErrorMessage] = useState('');
+  const [expectedTime, setExpectedTime] = useState(null);
 
 
   const initialState = {
@@ -47,6 +48,26 @@ function TokenSender({ wallet }) {
     }
   };
 
+    async function getExpectedTransactionTime(transactionHash, provider, confirmationsNeeded = 12) {
+      try {
+          const transactionReceipt = await provider.getTransactionReceipt(transactionHash);
+          if (!transactionReceipt) {
+              return null; // Transaction receipt not available yet
+          }
+          
+          const currentBlockNumber = await provider.getBlockNumber();
+          const blocksToConfirm = transactionReceipt.blockNumber - currentBlockNumber + confirmationsNeeded;
+          const averageBlockTimeSeconds = 13; // Adjust this value based on the blockchain network
+          
+          const expectedTimeSeconds = blocksToConfirm * averageBlockTimeSeconds;
+          return expectedTimeSeconds;
+      } catch (error) {
+          console.error('Error getting expected transaction time:', error);
+          return null;
+      }
+  }
+
+
   const handleSend = async () => {
     const { contractAddress, amount, recipient } = state;
   
@@ -58,14 +79,29 @@ function TokenSender({ wallet }) {
   
     try {
       setState({ ...state, transactionStatus: 'pending' });
+
+      const { contractAddress, amount, recipient } = state;
+  
+      if (!wallet || !contractAddress || !amount || !recipient) return;
+  
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner(wallet);
+      const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
   
       const tx = await contract.transfer(recipient, ethers.utils.parseUnits(amount, await contract.decimals()));
       const transactionHash = tx.hash;
       localStorage.setItem('transactionHash', transactionHash); // Update local storage with new transaction hash
   
+      // Wait for the transaction to be mined
       await tx.wait();
   
+      // Get expected transaction time after transaction is mined
+      const expectedTimeSeconds = await getExpectedTransactionTime(transactionHash, provider);
+      console.log(expectedTime)
+      setExpectedTime(expectedTimeSeconds); // Set expected time in state
+  
       setState({ ...state, transactionStatus: 'success', transactionHash });
+
     } catch (error) {
       console.error('Error sending tokens:', error);
   
@@ -126,7 +162,6 @@ function TokenSender({ wallet }) {
     const checkStatusRecursively = async () => {
       try {
         const status = await checkTransactionStatus(transactionHash, wallet);
-        console.log("Transaction status:", status);
         // Update the state or take further action based on the transaction status
   
         if (status === 'pending') {
@@ -178,51 +213,7 @@ function TokenSender({ wallet }) {
     Object.keys(state).forEach(key => localStorage.setItem(key, state[key]));
   }, [state]);
 
-  useEffect(() => {
-    console.log("Setting up event listener...");
-    
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner(wallet);
-  
-    if (!provider) {
-      console.error("Web3 provider not found.");
-      return;
-    }
-  
-    console.log("Web3 provider found:", provider);
-  
-    const filter = {
-      address: state.contractAddress, // Address of the ERC20 contract
-      topics: [ethers.utils.id('Transfer(address,address,uint256)')], // Transfer event topic
-      fromBlock: 'latest',
-      toBlock: 'latest'
-    };
-  
-    console.log("Filter:", filter);
-  
-    const eventListener = async () => {
-      console.log("Inside event listener...");
-      provider.once(filter, async (log) => {
-        const transactionHash = log.transactionHash;
-        console.log('Pending Transaction Hash:', transactionHash);
-        // Add your logic here to handle pending transactions
-      });
-    };
-  
-    if (wallet && state.contractAddress) {
-      console.log("Attaching event listener...");
-      eventListener();
-    } else {
-      console.warn("Wallet or contract address not available.");
-    }
-  
-    return () => {
-      // Cleanup function
-      console.log("Removing all listeners...");
-      provider.removeAllListeners();
-    };
-  }, [wallet, state.contractAddress]);
-  
+ 
 
 
   return (
@@ -270,6 +261,8 @@ function TokenSender({ wallet }) {
         {state.transactionStatus === 'failure' && <p>Transaction failed.</p>}
         {state.transactionStatus === 'replaced' && <p style={{ fontSize: '24px', color: 'red' }}>Transaction was replaced!</p>}
         {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+        {expectedTime && <p>Expected time for transaction to be mined: {expectedTime} seconds</p>}
+        {state.transactionHash && <p>Transaction Hash: {state.transactionHash}</p>}
 
 
       </div>
