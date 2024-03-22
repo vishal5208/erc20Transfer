@@ -50,23 +50,29 @@ function TokenSender({ wallet }) {
 
   const handleSend = async () => {
     const { contractAddress, amount, recipient } = state;
-
-    
+  
     if (!wallet || !contractAddress || !amount || !recipient) return;
-
+  
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner(wallet);
     const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
-
+  
     try {
       const tx = await contract.transfer(recipient, ethers.utils.parseUnits(amount, await contract.decimals()));
       await tx.wait();
       alert('Tokens sent successfully!');
+      
+      // Update balance after successful transaction
+      const userBalance = await contract.balanceOf(wallet);
+      const formattedBalance = ethers.utils.formatUnits(userBalance, await contract.decimals());
+      setState(prevState => ({ ...prevState, balance: formattedBalance }));
+      localStorage.setItem('balance', formattedBalance); // Save updated balance to localStorage
     } catch (error) {
       console.error('Error sending tokens:', error);
       alert('Failed to send tokens.');
     }
   };
+  
 
   // Save state to localStorage on state change
   useEffect(() => {
