@@ -218,55 +218,53 @@ function TokenSender({ wallet }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ border: '1px solid #ccc', padding: '10px', marginBottom: '20px', width: '100%', maxWidth: '500px' }}>
-        <Button variant="contained" color="primary" onClick={handleCheckBalance} style={{ marginBottom: '10px' }}>
-          Check Balance
-        </Button>
-        <p>Your balance: {state.balance} {state.tokenSymbol}</p>
-        <p>Sender: {wallet}</p>
-      </div>
-      <div style={{ border: '1px solid #ccc', padding: '20px', borderRadius: '5px', width: '100%', maxWidth: '500px' }}>
-        <TextField
-          label="ERC20 Contract Address"
-          name="contractAddress"
-          value={state.contractAddress}
-          onChange={handleChange}
-          fullWidth
-          margin="normal"
-          sx={{ marginBottom: '20px' }}
-        />
-        <TextField
-          label="Recipient Address"
-          name="recipient"
-          value={state.recipient}
-          onChange={handleChange}
-          fullWidth
-          margin="normal"
-          sx={{ marginBottom: '20px' }}
-        />
-        <TextField
-          label="Amount"
-          name="amount"
-          value={state.amount}
-          onChange={handleChange}
-          fullWidth
-          margin="normal"
-          sx={{ marginBottom: '20px' }}
-        />
-        <Button variant="contained" color="primary" onClick={handleSend}>
-          Send Tokens
-        </Button>
-        {state.transactionStatus === 'pending' && <p>Transaction is pending...</p>}
-        {state.transactionStatus === 'success' && <p>Transaction succeeded!</p>}
-        {state.transactionStatus === 'failure' && <p>Transaction failed.</p>}
-        {state.transactionStatus === 'replaced' && <p style={{ fontSize: '24px', color: 'red' }}>Transaction was replaced!</p>}
-        {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
-        {expectedTime && <p>Expected time for transaction to be mined: {expectedTime} seconds</p>}
-        {state.transactionHash && <p>Transaction Hash: {state.transactionHash}</p>}
-
-
-      </div>
+    <div style={{ border: '1px solid #ccc', padding: '10px', marginBottom: '20px', width: '100%', maxWidth: '600px' }}>
+      <Button variant="contained" color="primary" onClick={handleCheckBalance} style={{ marginBottom: '10px' }}>
+        Check Balance
+      </Button>
+      <p>Your balance: {state.balance} {state.tokenSymbol}</p>
+      <p>Sender: {wallet}</p>
     </div>
+    <div style={{ border: '1px solid #ccc', padding: '20px', borderRadius: '5px', width: '100%', maxWidth: '600px' }}>
+      <TextField
+        label="ERC20 Contract Address"
+        name="contractAddress"
+        value={state.contractAddress}
+        onChange={handleChange}
+        fullWidth
+        margin="normal"
+        sx={{ marginBottom: '20px', width: '100%' }}
+      />
+      <TextField
+        label="Recipient Address"
+        name="recipient"
+        value={state.recipient}
+        onChange={handleChange}
+        fullWidth
+        margin="normal"
+        sx={{ marginBottom: '20px', width: '100%' }}
+      />
+      <TextField
+        label="Amount"
+        name="amount"
+        value={state.amount}
+        onChange={handleChange}
+        fullWidth
+        margin="normal"
+        sx={{ marginBottom: '20px', width: '100%' }}
+      />
+      <Button variant="contained" color="primary" onClick={handleSend} sx={{ width: '100%' }}>
+        Send Tokens
+      </Button>
+      {state.transactionStatus === 'pending' && <p>Transaction is pending...</p>}
+      {state.transactionStatus === 'success' && <p>Transaction succeeded!</p>}
+      {state.transactionStatus === 'failure' && <p>Transaction failed.</p>}
+      {state.transactionStatus === 'replaced' && <p style={{ fontSize: '24px', color: 'red' }}>Transaction was replaced!</p>}
+      {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+      {expectedTime && <p>Expected time for transaction to be mined: {expectedTime} seconds</p>}
+      {state.transactionHash && <p>Transaction Hash: {state.transactionHash}</p>}
+    </div>
+  </div>
   );
 }
 
