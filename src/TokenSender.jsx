@@ -49,7 +49,7 @@ function TokenSender({ wallet }) {
   };
 
   const handleSend = async () => {
-    const { wallet, contractAddress, amount, recipient } = state;
+    const { contractAddress, amount, recipient } = state;
 
     
     if (!wallet || !contractAddress || !amount || !recipient) return;
