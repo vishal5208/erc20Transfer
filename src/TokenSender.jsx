@@ -107,7 +107,6 @@ function TokenSender({ wallet }) {
     // Call checkTransactionStatus function
     const checkStatusRecursively = async () => {
       try {
-        console.log("hiiiiiiiiiiiii")
         const status = await checkTransactionStatus(transactionHash, wallet);
         console.log("Transaction status:", status);
         // Update the state or take further action based on the transaction status
