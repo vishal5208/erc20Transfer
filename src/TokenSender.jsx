@@ -21,20 +21,19 @@ function TokenSender({ wallet }) {
   };
 
   const handleCheckBalance = async () => {
-    const {contractAddress } = state;
+    
+    const { contractAddress } = state;
+
 
     if (!wallet || !contractAddress) return;
 
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner(wallet);
-    console.log(signer)
     const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
-    
+
     try {
       // Fetch token symbol
       const tokenSymbol = await contract.symbol();
-    
-      console.log(tokenSymbol)
 
       // Fetch user balance
       const userBalance = await contract.balanceOf(wallet);
@@ -51,12 +50,14 @@ function TokenSender({ wallet }) {
 
   const handleSend = async () => {
     const { wallet, contractAddress, amount, recipient } = state;
+
+    
     if (!wallet || !contractAddress || !amount || !recipient) return;
 
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner(wallet);
     const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
-    
+
     try {
       const tx = await contract.transfer(recipient, ethers.utils.parseUnits(amount, await contract.decimals()));
       await tx.wait();
@@ -74,41 +75,45 @@ function TokenSender({ wallet }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <TextField
-        label="ERC20 Contract Address"
-        name="contractAddress"
-        value={state.contractAddress}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        sx={{ maxWidth: '400px' }}
-      />
-      <TextField
-        label="Recipient Address"
-        name="recipient"
-        value={state.recipient}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        sx={{ maxWidth: '400px' }}
-      />
-      <TextField
-        label="Amount"
-        name="amount"
-        value={state.amount}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        sx={{ maxWidth: '400px' }}
-      />
-      <Button variant="contained" color="primary" onClick={handleCheckBalance} style={{ marginBottom: '10px' }}>
-        Check Balance
-      </Button>
-      <p>Your balance: {state.balance} {state.tokenSymbol}</p> {/* Display token symbol */}
-      <p>Sender: {wallet}</p> 
-      <Button variant="contained" color="primary" onClick={handleSend}>
-        Send Tokens
-      </Button>
+      <div style={{ border: '1px solid #ccc', padding: '10px', marginBottom: '20px', width: '100%', maxWidth: '500px' }}>
+        <Button variant="contained" color="primary" onClick={handleCheckBalance} style={{ marginBottom: '10px' }}>
+          Check Balance
+        </Button>
+        <p>Your balance: {state.balance} {state.tokenSymbol}</p>
+        <p>Sender: {wallet}</p>
+      </div>
+      <div style={{ border: '1px solid #ccc', padding: '20px', borderRadius: '5px', width: '100%', maxWidth: '500px' }}>
+        <TextField
+          label="ERC20 Contract Address"
+          name="contractAddress"
+          value={state.contractAddress}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          sx={{ marginBottom: '20px' }}
+        />
+        <TextField
+          label="Recipient Address"
+          name="recipient"
+          value={state.recipient}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          sx={{ marginBottom: '20px' }}
+        />
+        <TextField
+          label="Amount"
+          name="amount"
+          value={state.amount}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          sx={{ marginBottom: '20px' }}
+        />
+        <Button variant="contained" color="primary" onClick={handleSend}>
+          Send Tokens
+        </Button>
+      </div>
     </div>
   );
 }
