@@ -26,31 +26,44 @@ const TransactionHistory = () => {
 
   const historyChunks = chunks(history, 4);
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'success':
+        return 'green';
+      case 'failure':
+        return 'red';
+      case 'replaced':
+        return 'purple'; // Change to purple for the "replaced" status
+      default:
+        return 'black';
+    }
+  };
+
   return (
     <Card variant="outlined" style={{ marginTop: '20px', width: '100%', maxWidth: '100%' }}>
       <CardContent>
         <Typography variant="h5" component="h2">
-          Transaction History
+          Transaction History (latest first)
         </Typography>
         {historyChunks.map((chunk, index) => (
           <Box key={index} display="flex" flexDirection="row" flexWrap="wrap" justifyContent="center">
             {chunk.map((transaction, idx) => (
               <Box key={idx} margin="10px" border="1px solid #ccc" borderRadius="5px" padding="20px" style={{ display: 'inline-block', width: '23%', minWidth: '300px' }}>
                 <Typography variant="body1" gutterBottom>
-                  Recipient: {`${transaction.recipient.slice(0, 3)}...${transaction.recipient.slice(-4)}`}
+                  Recipient: {transaction.recipient ? `${transaction.recipient.slice(0, 3)}...${transaction.recipient.slice(-4)}` : 'N/A'}
                 </Typography>
                 <Typography variant="body1" gutterBottom>
                   Amount: {transaction.amount}
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  Contract Address: {`${transaction.contractAddress.slice(0, 3)}...${transaction.contractAddress.slice(-4)}`}
+                  Contract Address: {transaction.contractAddress ? `${transaction.contractAddress.slice(0, 3)}...${transaction.contractAddress.slice(-4)}` : 'N/A'}
                 </Typography>
-                <Typography variant="body1" gutterBottom>
+                <Typography variant="body1" gutterBottom style={{ color: getStatusColor(transaction.status) }}>
                   Status: {transaction.status}
                 </Typography>
                 <Box display="flex" alignItems="center">
                   <Typography variant="body1" gutterBottom style={{ marginRight: '10px', flex: 1 }}>
-                    Transaction Hash: {transaction.transactionHash.slice(0, 12)}...{' '}
+                    Transaction Hash: {transaction.transactionHash ? `${transaction.transactionHash.slice(0, 12)}...` : 'N/A'}
                   </Typography>
                   <button onClick={() => copyToClipboard(transaction.transactionHash)} style={{ padding: '5px' }}>Copy</button>
                 </Box>

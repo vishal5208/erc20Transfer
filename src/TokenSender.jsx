@@ -97,27 +97,6 @@ function TokenSender() {
     }
   }
 
-  // useEffect(() => {
-  //   if (state.transactionStatus === 'success' || state.transactionStatus === 'failure') {
-  //     const clearTransactionData = setTimeout(() => {
-  //       setState(prevState => ({
-  //         ...prevState,
-  //         errorMessage: '',
-  //         expectedTime: null,
-  //         transactionHash: null
-  //       }));
-  //       localStorage.removeItem('transactionHash');
-  //       localStorage.removeItem('expectedTime');
-  //       setExpectedTime(null); 
-  //       setErrorMessage("")
-  //     }, 10000); // Clear after 5 seconds
-  
-  //     // Cleanup function to clear timeout when component unmounts or when a new transaction is sent
-  //     return () => clearTimeout(clearTransactionData);
-  //   }
-  
-   
-  // }, [state.transactionStatus]);
 
   useEffect(() => {
     handleCheckBalance(); // Call handleCheckBalance when component mounts
@@ -205,32 +184,32 @@ function TokenSender() {
     }
   };
 
-  // useEffect(() => {
-  //   if (state.transactionStatus === 'success' || state.transactionStatus === 'failure' || state.transactionStatus === 'replaced') {
-  //     const clearTransactionData = setTimeout(() => {
-  //       setState(prevState => ({
-  //         ...prevState,
-  //         errorMessage: '',
-  //         expectedTime: null,
-  //         transactionHash: null
-  //       }));
-  //       setErrorMessage("");
+  useEffect(() => {
+    if (state.transactionStatus === 'success' || state.transactionStatus === 'failure' || state.transactionStatus === 'replaced') {
+      const clearTransactionData = setTimeout(() => {
+        setState(prevState => ({
+          ...prevState,
+          errorMessage: '',
+          expectedTime: null,
+          transactionHash: null
+        }));
+        setErrorMessage("");
   
-  //       // Remove transactionHash from localStorage only if it's set
-  //       if (state.transactionHash) {
-  //         localStorage.removeItem('transactionHash');
-  //       }
-  //       localStorage.removeItem('expectedTime');
-  //     }, 5000); // Clear after 5 seconds
+        // Remove transactionHash from localStorage only if it's set
+        if (state.transactionHash) {
+          localStorage.removeItem('transactionHash');
+        }
+        localStorage.removeItem('expectedTime');
+      }, 5000); // Clear after 5 seconds
   
-  //     // Cleanup function to clear timeout when component unmounts or when a new transaction is sent
-  //     return () => clearTimeout(clearTransactionData);
-  //   }
+      // Cleanup function to clear timeout when component unmounts or when a new transaction is sent
+      return () => clearTimeout(clearTransactionData);
+    }
   
-  //   if (state.transactionStatus !== 'pending') {
-  //     setExpectedTime(null); // Clear expected time if transaction is not pending
-  //   }
-  // }, [state.transactionStatus, state.transactionHash]);
+    if (state.transactionStatus !== 'pending') {
+      setExpectedTime(null); // Clear expected time if transaction is not pending
+    }
+  }, [state.transactionStatus, state.transactionHash]);
   
   
 
@@ -370,7 +349,7 @@ function TokenSender() {
         {state.transactionHash && state.transactionStatus === 'replaced' && <p style={{ fontSize: '24px', color: 'red' }}>Transaction was replaced!</p>}
         {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
         {state.transactionHash && expectedTime && <p>Expected time for transaction to be mined: {expectedTime} seconds</p>}
-        {state.transactionHash && state.transactionHash !== 'null' && <p>Transaction Hash: {state.transactionHash}</p>}
+        {/* {state.transactionHash && state.transactionHash !== 'null' && <p>Transaction Hash: {state.transactionHash}</p>} */}
       </div>
     </div>
   );
