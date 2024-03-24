@@ -89,7 +89,7 @@ function TokenSender() {
         localStorage.removeItem('expectedTime');
         setExpectedTime(null); 
         setErrorMessage("")
-      }, 5000); // Clear after 5 seconds
+      }, 10000); // Clear after 5 seconds
   
       // Cleanup function to clear timeout when component unmounts or when a new transaction is sent
       return () => clearTimeout(clearTransactionData);
@@ -97,6 +97,10 @@ function TokenSender() {
   
    
   }, [state.transactionStatus]);
+
+  useEffect(() => {
+    handleCheckBalance(); // Call handleCheckBalance when component mounts
+  }, []);
 
   const handleSend = async () => {
     const { contractAddress, amount, recipient } = state;
