@@ -313,11 +313,11 @@ function TokenSender() {
           Send Tokens
         </Button>
         {state.transactionStatus === 'pending' && <p>Transaction is pending...</p>}
-        {state.transactionStatus === 'success' && <p>Transaction succeeded!</p>}
+        {state.transactionHash && state.transactionStatus === 'success' && <p>Transaction succeeded!</p>}
         {state.transactionHash && state.transactionStatus === 'failure' && <p>Transaction failed.</p>}
-        {state.transactionStatus === 'replaced' && <p style={{ fontSize: '24px', color: 'red' }}>Transaction was replaced!</p>}
+        {state.transactionHash && state.transactionStatus === 'replaced' && <p style={{ fontSize: '24px', color: 'red' }}>Transaction was replaced!</p>}
         {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
-        {expectedTime && <p>Expected time for transaction to be mined: {expectedTime} seconds</p>}
+        {state.transactionHash && expectedTime && <p>Expected time for transaction to be mined: {expectedTime} seconds</p>}
         {state.transactionHash && state.transactionHash !== 'null' && <p>Transaction Hash: {state.transactionHash}</p>}
       </div>
     </div>
