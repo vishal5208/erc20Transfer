@@ -314,7 +314,7 @@ function TokenSender() {
         </Button>
         {state.transactionStatus === 'pending' && <p>Transaction is pending...</p>}
         {state.transactionStatus === 'success' && <p>Transaction succeeded!</p>}
-        {state.transactionStatus === 'failure' && <p>Transaction failed.</p>}
+        {state.transactionHash && state.transactionStatus === 'failure' && <p>Transaction failed.</p>}
         {state.transactionStatus === 'replaced' && <p style={{ fontSize: '24px', color: 'red' }}>Transaction was replaced!</p>}
         {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
         {expectedTime && <p>Expected time for transaction to be mined: {expectedTime} seconds</p>}
