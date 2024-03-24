@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 import { connectWallet as connectToWallet } from "../utils/connectWallet";
 
@@ -31,8 +31,32 @@ export const WalletProvider = ({ children }) => {
     setWalletAddress("");
   };
 
+  useEffect(() => {
+    // Function to handle account change
+    const handleAccountChange = (accounts) => {
+      if (accounts.length > 0) {
+        setWalletAddress(accounts[0]);
+      } else {
+        // No accounts detected, disconnect wallet
+        disconnectWallet();
+      }
+    };
+
+    // Listen for account changes
+    if (window.ethereum) {
+      window.ethereum.on("accountsChanged", handleAccountChange);
+    }
+
+    // Cleanup function
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.off("accountsChanged", handleAccountChange);
+      }
+    };
+  }, []); // Only run once on component mount
+
   // Load wallet status and address from localStorage on mount
-  useState(() => {
+  useEffect(() => {
     const storedStatus = localStorage.getItem("walletStatus");
     const storedAddress = localStorage.getItem("walletAddress");
     if (storedStatus === "connected" && storedAddress) {
