@@ -100,9 +100,7 @@ function TokenSender() {
     if (!contractAddress || !amount || !recipient) return;
 
     const provider = new ethers.providers.Web3Provider(window.ethereum);
-    
     const signer = provider.getSigner();
-    
     const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
 
     try {
@@ -148,7 +146,7 @@ function TokenSender() {
   };
 
   useEffect(() => {
-    if (state.transactionStatus === 'success' || state.transactionStatus === 'failure') {
+    if (state.transactionStatus === 'success' || state.transactionStatus === 'failure' || state.transactionStatus === 'replaced') {
       const clearTransactionData = setTimeout(() => {
         setState(prevState => ({
           ...prevState,
@@ -156,7 +154,12 @@ function TokenSender() {
           expectedTime: null,
           transactionHash: null
         }));
-        localStorage.removeItem('transactionHash');
+        setErrorMessage("");
+  
+        // Remove transactionHash from localStorage only if it's set
+        if (state.transactionHash) {
+          localStorage.removeItem('transactionHash');
+        }
         localStorage.removeItem('expectedTime');
       }, 5000); // Clear after 5 seconds
   
@@ -167,7 +170,8 @@ function TokenSender() {
     if (state.transactionStatus !== 'pending') {
       setExpectedTime(null); // Clear expected time if transaction is not pending
     }
-  }, [state.transactionStatus]);
+  }, [state.transactionStatus, state.transactionHash]);
+  
   
 
 
@@ -304,7 +308,7 @@ function TokenSender() {
         {state.transactionStatus === 'replaced' && <p style={{ fontSize: '24px', color: 'red' }}>Transaction was replaced!</p>}
         {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
         {expectedTime && <p>Expected time for transaction to be mined: {expectedTime} seconds</p>}
-        {state.transactionHash && <p>Transaction Hash: {state.transactionHash}</p>}
+        {state.transactionHash && state.transactionHash !== 'null' && <p>Transaction Hash: {state.transactionHash}</p>}
       </div>
     </div>
   );
