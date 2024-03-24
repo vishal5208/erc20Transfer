@@ -276,7 +276,7 @@ function TokenSender() {
       
       <p>Your balance: {balance} {tokenSymbol}</p>
         
-        <Button variant="contained" color="primary" onClick={handleCheckBalance} style={{ marginBottom: '10px' }}>
+        <Button variant="contained" color="primary" onClick={handleCheckBalance} disabled={!state.contractAddress} style={{ marginBottom: '10px' }}>
           Check Balance
         </Button>
         {/* <p>Sender: {walletAddress}</p> */}
