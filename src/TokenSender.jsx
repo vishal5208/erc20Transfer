@@ -12,6 +12,10 @@ function TokenSender() {
 
   const [errorMessage, setErrorMessage] = useState('');
   const [expectedTime, setExpectedTime] = useState(null);
+  const [balance, setBalance] = useState(0); 
+  const [tokenSymbol, setTokenSymbol] = useState('');
+
+
 
   const initialState = {
     recipient: localStorage.getItem('recipient') || '',
@@ -41,12 +45,12 @@ function TokenSender() {
     const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
 
     try {
-      const tokenSymbol = await contract.symbol();
+      const symbol = await contract.symbol();
       const userBalance = await contract.balanceOf(walletAddress);
       const formattedBalance = ethers.utils.formatUnits(userBalance, await contract.decimals());
 
-      setState({ ...state, balance: formattedBalance, tokenSymbol });
-      localStorage.setItem('balance', formattedBalance);
+      setTokenSymbol(symbol);
+      setBalance(formattedBalance);
     } catch (error) {
       console.error('Error checking balance:', error);
       alert('Failed to check balance.');
@@ -265,11 +269,13 @@ function TokenSender() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ border: '1px solid #ccc', padding: '10px', marginBottom: '20px', width: '100%', maxWidth: '600px' }}>
+      
+      <p>Your balance: {balance} {tokenSymbol}</p>
+        
         <Button variant="contained" color="primary" onClick={handleCheckBalance} style={{ marginBottom: '10px' }}>
           Check Balance
         </Button>
-        <p>Your balance: {state.balance} {state.tokenSymbol}</p>
-        <p>Sender: {walletAddress}</p>
+        {/* <p>Sender: {walletAddress}</p> */}
       </div>
       <div style={{ border: '1px solid #ccc', padding: '20px', borderRadius: '5px', width: '100%', maxWidth: '600px' }}>
         <TextField
