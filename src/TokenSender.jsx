@@ -4,7 +4,12 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import erc20Abi from './erc20Abi';
 
-function TokenSender({ wallet }) {
+import { useWallet } from './components/WalletContext';
+
+function TokenSender() {
+  const { walletStatus, walletAddress, connectWallet, disconnectWallet } = useWallet();
+
+
   const [errorMessage, setErrorMessage] = useState('');
   const [expectedTime, setExpectedTime] = useState(null);
 
@@ -29,15 +34,15 @@ function TokenSender({ wallet }) {
   const handleCheckBalance = async () => {
     const { contractAddress } = state;
 
-    if (!wallet || !contractAddress) return;
+    if (!walletAddress || !contractAddress) return;
 
     const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner(wallet);
+    const signer = provider.getSigner();
     const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
 
     try {
       const tokenSymbol = await contract.symbol();
-      const userBalance = await contract.balanceOf(wallet);
+      const userBalance = await contract.balanceOf(walletAddress);
       const formattedBalance = ethers.utils.formatUnits(userBalance, await contract.decimals());
 
       setState({ ...state, balance: formattedBalance, tokenSymbol });
@@ -70,10 +75,12 @@ function TokenSender({ wallet }) {
   const handleSend = async () => {
     const { contractAddress, amount, recipient } = state;
 
-    if (!wallet || !contractAddress || !amount || !recipient) return;
+    if (!contractAddress || !amount || !recipient) return;
 
     const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner(wallet);
+    
+    const signer = provider.getSigner();
+    
     const contract = new ethers.Contract(contractAddress, erc20Abi, signer);
 
     try {
@@ -119,14 +126,41 @@ function TokenSender({ wallet }) {
   };
 
   useEffect(() => {
-    const transactionHash = localStorage.getItem('transactionHash');
+    if (state.transactionStatus === 'success' || state.transactionStatus === 'failure') {
+      const clearTransactionData = setTimeout(() => {
+        setState(prevState => ({
+          ...prevState,
+          errorMessage: '',
+          expectedTime: null,
+          transactionHash: null
+        }));
+        localStorage.removeItem('transactionHash');
+        localStorage.removeItem('expectedTime');
+      }, 5000); // Clear after 5 seconds
+  
+      // Cleanup function to clear timeout when component unmounts or when a new transaction is sent
+      return () => clearTimeout(clearTransactionData);
+    }
+  
+    if (state.transactionStatus !== 'pending') {
+      setExpectedTime(null); // Clear expected time if transaction is not pending
+    }
+  }, [state.transactionStatus]);
+  
 
+
+  useEffect(() => {
+    const transactionHash = localStorage.getItem('transactionHash');
+  
+    if (!transactionHash) return;
+  
+  
     // Call checkTransactionStatus function
     const checkStatusRecursively = async () => {
       try {
-        const status = await checkTransactionStatus(transactionHash, wallet);
+        const status = await checkTransactionStatus(transactionHash, walletAddress);
         // Update the state or take further action based on the transaction status
-
+  
         if (status === 'pending') {
           // If transaction is still pending, wait for a few seconds and check again
           setTimeout(checkStatusRecursively, 5000); // Check again after 5 seconds
@@ -135,14 +169,15 @@ function TokenSender({ wallet }) {
         console.error("Error checking transaction status:", error);
       }
     };
-
+  
     if (transactionHash) {
       checkStatusRecursively();
     }
   }, []);
-
+  
   const checkTransactionStatus = async (transactionHash, wallet) => {
     if (!wallet || !transactionHash) return null;
+
 
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner(wallet);
@@ -169,10 +204,10 @@ function TokenSender({ wallet }) {
 
   useEffect(() => {
     const getTransactionStatus = async () => {
-      if (!wallet || !state.transactionHash) return;
+      if (!state.transactionHash) return;
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner(wallet);
+      const signer = provider.getSigner();
 
       try {
         const transactionReceipt = await signer.provider.getTransactionReceipt(state.transactionHash);
@@ -193,7 +228,7 @@ function TokenSender({ wallet }) {
     };
 
     getTransactionStatus();
-  }, [state.transactionHash, wallet]);
+  }, [state.transactionHash, walletAddress]);
 
   useEffect(() => {
     Object.keys(state).forEach(key => localStorage.setItem(key, state[key]));
@@ -208,7 +243,7 @@ function TokenSender({ wallet }) {
           Check Balance
         </Button>
         <p>Your balance: {state.balance} {state.tokenSymbol}</p>
-        <p>Sender: {wallet}</p>
+        <p>Sender: {walletAddress}</p>
       </div>
       <div style={{ border: '1px solid #ccc', padding: '20px', borderRadius: '5px', width: '100%', maxWidth: '600px' }}>
         <TextField
