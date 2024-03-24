@@ -72,6 +72,28 @@ function TokenSender() {
     }
   }
 
+  useEffect(() => {
+    if (state.transactionStatus === 'success' || state.transactionStatus === 'failure') {
+      const clearTransactionData = setTimeout(() => {
+        setState(prevState => ({
+          ...prevState,
+          errorMessage: '',
+          expectedTime: null,
+          transactionHash: null
+        }));
+        localStorage.removeItem('transactionHash');
+        localStorage.removeItem('expectedTime');
+        setExpectedTime(null); 
+        setErrorMessage("")
+      }, 5000); // Clear after 5 seconds
+  
+      // Cleanup function to clear timeout when component unmounts or when a new transaction is sent
+      return () => clearTimeout(clearTransactionData);
+    }
+  
+   
+  }, [state.transactionStatus]);
+
   const handleSend = async () => {
     const { contractAddress, amount, recipient } = state;
 
